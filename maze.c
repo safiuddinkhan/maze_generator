@@ -217,31 +217,33 @@ struct cell *m_bottom;
 int x_gap = 4;
 int y_gap = 2;
 
+// draw the correct left edge of a cell. will do most cells except for the right most wall of the maze and the bottom most wall of the maze
 for(int y = 0;y < h;y++){
 for(int x = 0;x < w;x++){
 int cc = get_leftwall_code(maze,y,x);
-printf("\033[%d;%dH%s",(y*y_gap)+y_pos,(x*x_gap)+x_pos,corner[cc]);
+printf("\033[%d;%dH%s",(y*y_gap)+y_pos,(x*x_gap)+x_pos,corner[cc]); // using ANSI escape code \033[<y>;<x>H to position the edges on the screen
 }}
 
 
-
+// draw the correct bottom edge of the bottom most cells
 for(int x = 0;x< w;x++){
 int cc = get_bottomwall_code(maze,(h-1),x);
 printf("\033[%d;%dH%s",((h-1)*y_gap)+y_pos+2,(x*x_gap)+x_pos,corner[cc]);
 }
 
-
+// draw the correct right edge of the right most cells
 for(int y = 0;y < h;y++){
 int cc = get_rightwall_code(maze,y,(w-1));
 printf("\033[%d;%dH%s",(y*y_gap)+y_pos,((w-1)*x_gap)+x_pos+4,corner[cc]);
 }
 
 
-
+// draw the correct bottom right edge of the maze
 int cc1 = get_brcorner_code(maze);
 printf("\033[%d;%dH%s",((h-1)*y_gap)+y_pos+2,((w-1)*x_gap)+x_pos+4,corner[cc1]);
 
 
+// draw the walls
 for(int y = 0;y < h;y++){
 for(int x = 0;x < w;x++){
 m = &c[(y*w)+x];
@@ -275,7 +277,7 @@ printf("\033[%d;%dH ",(y*y_gap)+y_pos+1,(x*x_gap)+x_pos+4);
 //////
 }}
 
-printf("\033[1B\n");
+printf("\033[2B\n"); // push cursor 1 line and then do a new line
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -481,7 +483,7 @@ break;
 
 void generate_maze(struct maze_context *maze){
 
-if(maze->h <= 1 && maze->w <= 1){
+if(maze->h <= 1 && maze->w <= 1){ // 1x1 or less maze will make the code to go in an infinite loop so don't process those 
 return;
 }
 
@@ -491,15 +493,17 @@ struct stack_cell *stack_curr = NULL;
 int maze_h = maze->h;
 int maze_w = maze->w;
 
-int r_y = rand() % maze_h;
+// select a random cell
+int r_y = rand() % maze_h;   
 int r_x = rand() % maze_w;
+
 int r_c = 0;
 int back_y;
 int back_x;
 int back_c;
 
 
-stack_insert(&stack_curr,r_y,r_x);
+
 
 
 int k;
@@ -509,18 +513,20 @@ struct cell* m;
 
 while(1){
 
-///////////////////////////////////////////////////
-toggle_visited(maze,r_y,r_x,high);
-///////////////////////////////////////////////////
+
+toggle_visited(maze,r_y,r_x,high);   // mark the current cell as visited
+
 
 m = &maze->c[(r_y*maze_w)+r_x];
 
 int cc;
 int all;
+
+// select a random neighbour not visited of the current cell
 while(1){
-r_c = (rand() % 4)+1;
-cc = is_wall_visited(maze,r_y,r_x,r_c);
-all = is_all_visited(maze,r_y,r_x);
+r_c = (rand() % 4)+1; // choose a random neighbour
+cc = is_wall_visited(maze,r_y,r_x,r_c); // it will return 1 if the neighbour next to the wall is visited else 0
+all = is_all_visited(maze,r_y,r_x); // if all neighbours are visited it will return 1 else 0
 if(all)
 break;
 
@@ -531,11 +537,12 @@ break;
 
 
 
-stack_insert(&stack_curr,r_y,r_x);
+stack_insert(&stack_curr,r_y,r_x); // insert the position of the first cell to the stack
 
 
 
-/////////////////////////////////
+
+//if all neighbours visited backtrack to the cell which has at least one neighbour not visited
 if(is_all_visited(maze,r_y,r_x)){
 
 
@@ -543,26 +550,28 @@ if(is_all_visited(maze,r_y,r_x)){
 int cc;
 
 while(1){
-stack_drop(&stack_curr);
+stack_drop(&stack_curr); // drop the current cell from the stack and move to the previous one
 
-if(stack_curr == NULL)
+if(stack_curr == NULL) // if stack is empty break the loop
 break;
 
-back_y = stack_curr->y;
+back_y = stack_curr->y; 
 back_x = stack_curr->x;
 cc = is_all_visited(maze,back_y,back_x);
 
 
 
 
-if(!cc)
+if(!cc) // if an unvisited neighbour found break the loop
 break;
 
 }
 
+// make the backtracked cell the current one
 r_y = back_y;
 r_x = back_x;
 
+// select a random neighbour not visited of the current cell
 while(1){
 r_c = (rand() % 4)+1;
 cc = is_wall_visited(maze,r_y,r_x,r_c);
@@ -579,7 +588,7 @@ break;
 
 
 
-toggle_wall(maze,r_y,r_x,r_c,low);
+toggle_wall(maze,r_y,r_x,r_c,low); // torn down the wall between the current cell and the neighbour not visited
 struct cell* m;
 m = &maze->c[(r_y*maze_w)+r_x];
 
@@ -604,7 +613,7 @@ break;
 
 
 
-if(maze->visit_count == (maze_h * maze_w)-1){
+if(maze->visit_count == (maze_h * maze_w)-1){ // if all cells visited end the loop
 break;
 }
 
